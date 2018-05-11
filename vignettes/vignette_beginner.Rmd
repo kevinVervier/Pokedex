@@ -19,15 +19,17 @@ In this section, we are describing the data used for this tutorial. We consider 
 
 Raw data were already processed to save time. We randomly split data in two sets (*train.df* and *val.df*) that cover respectively 80% and 20% of the data. 
 
-```{r}
+```{r echo=F}
 load('../data/processed_data_water_fire.Rdata')
 ```
 
 Here is an interactive table of the training set. Feel free to sort the columns, and filter the rows to explore the dataset.
 
-```{r}
+```{r echo=F}
 if(!require('DT')) install.packages('DT',repos='http://mirror.las.iastate.edu/CRAN/')
+```
 
+```{r echo=F}
 DT::datatable(train.df,rownames= FALSE)
 ```
 
@@ -84,15 +86,16 @@ renderPlot({
   abline(v=input$axis,lty=2,lwd=2,col='red')
   legend(x = 'topright',legend = c('water','fire'),pch=c(16,16),col = c('blue','orange'))
   # find majority class on each side
-  tmp.left = sum(train.df[which(train.df$type_1=='fire'),input$variable]>input$axis)/nrow(train.df[which(train.df$type_1=='fire'),])
-  tmp.right = sum(train.df[which(train.df$type_1=='fire'),input$variable]<input$axis)/nrow(train.df[which(train.df$type_1=='fire'),])
+  tmp.left = sum(train.df[which(train.df$type_1=='water'),input$variable]>input$axis)/nrow(train.df[which(train.df$type_1=='water'),])
+  tmp.right = sum(train.df[which(train.df$type_1=='water'),input$variable]<input$axis)/nrow(train.df[which(train.df$type_1=='water'),])
    
-  if(tmp.left>tmp.right){
-    text('Majority of Fire type', x=input$axis*1.6,y=0.009,col='orange')
-        text('Majority of Water type', x=input$axis*0.4,y=0.009,col='blue')
+  
+  if(tmp.left<tmp.right){
+    text('Fire half', x=input$axis*1.6,y=0.009,col='orange')
+        text('Water half', x=input$axis*0.4,y=0.009,col='blue')
   }else{
-     text('Majority of Fire type', x=input$axis*0.4,y=0.009,col='orange')
-            text('Majority of Water type', x=input$axis*1.6,y=0.009,col='blue')
+     text('Fire half', x=input$axis*0.4,y=0.009,col='orange')
+            text('Water half', x=input$axis*1.6,y=0.009,col='blue')
   }
   
 },width=800)
@@ -162,14 +165,14 @@ renderPlot({
     abline(a=input$intercept,b = input$slope,col='red',lty=2,lwd=2)
   
     # get top/bot majority class
-  nb.fire.above = sum(input$slope*train.df[which(train.df$type_1=='fire'),input$x] + input$intercept < train.df[which(train.df$type_1=='fire'),input$y])/nrow(train.df[which(train.df$type_1=='fire'),])
-  nb.fire.below = sum(input$slope*train.df[which(train.df$type_1=='fire'),input$x] + input$intercept >= train.df[which(train.df$type_1=='fire'),input$y])/nrow(train.df[which(train.df$type_1=='fire'),])
-  if(nb.fire.above > nb.fire.below){
-      text('Majority of Fire type', x=0.5*(max(train.df[,input$x])-min(train.df[,input$x])), y = max(train.df[,input$y]),col='orange')
-        text('Majority of Water type', x=0.5*(max(train.df[,input$x])-min(train.df[,input$x])), y = min(train.df[,input$y]),col='blue')
+  nb.water.above = sum(input$slope*train.df[which(train.df$type_1=='water'),input$x] + input$intercept < train.df[which(train.df$type_1=='water'),input$y])/nrow(train.df[which(train.df$type_1=='water'),])
+  nb.water.below = sum(input$slope*train.df[which(train.df$type_1=='water'),input$x] + input$intercept >= train.df[which(train.df$type_1=='water'),input$y])/nrow(train.df[which(train.df$type_1=='water'),])
+  if(nb.water.above > nb.water.below){
+      text('Water half', x=0.5*(max(train.df[,input$x])-min(train.df[,input$x])), y = max(train.df[,input$y]),col='blue')
+        text('Fire half', x=0.5*(max(train.df[,input$x])-min(train.df[,input$x])), y = min(train.df[,input$y]),col='orange')
   }else{
-          text('Majority of Fire type', x=0.5*(max(train.df[,input$x])-min(train.df[,input$x])), y = min(train.df[,input$y]),col='orange')
-        text('Majority of Water type', x=0.5*(max(train.df[,input$x])-min(train.df[,input$x])), y = max(train.df[,input$y]),col='blue')
+          text('Water half', x=0.5*(max(train.df[,input$x])-min(train.df[,input$x])), y = min(train.df[,input$y]),col='blue')
+        text('Fire half', x=0.5*(max(train.df[,input$x])-min(train.df[,input$x])), y = max(train.df[,input$y]),col='orange')
   }
   
   })
@@ -183,15 +186,15 @@ renderUI({
 })
 
 renderText({
-  nb.fire.above = sum(input$slope*train.df[which(train.df$type_1=='fire'),input$x] + input$intercept < train.df[which(train.df$type_1=='fire'),input$y])/nrow(train.df[which(train.df$type_1=='fire'),])
-  nb.fire.below = sum(input$slope*train.df[which(train.df$type_1=='fire'),input$x] + input$intercept >= train.df[which(train.df$type_1=='fire'),input$y])/nrow(train.df[which(train.df$type_1=='fire'),])
-  if(nb.fire.above > nb.fire.below){
-    acc = sum(c(input$slope*train.df[which(train.df$type_1=='fire'),input$x] + input$intercept < train.df[which(train.df$type_1=='fire'),input$y],
-                input$slope*train.df[which(train.df$type_1=='water'),input$x] + input$intercept > train.df[which(train.df$type_1=='water'),input$y]))/nrow(train.df)
+  nb.water.above = sum(input$slope*train.df[which(train.df$type_1=='water'),input$x] + input$intercept < train.df[which(train.df$type_1=='water'),input$y])/nrow(train.df[which(train.df$type_1=='water'),])
+  nb.water.below = sum(input$slope*train.df[which(train.df$type_1=='water'),input$x] + input$intercept >= train.df[which(train.df$type_1=='water'),input$y])/nrow(train.df[which(train.df$type_1=='water'),])
+  if(nb.water.above > nb.water.below){
+    acc = sum(c(input$slope*train.df[which(train.df$type_1=='water'),input$x] + input$intercept < train.df[which(train.df$type_1=='water'),input$y],
+                input$slope*train.df[which(train.df$type_1=='fire'),input$x] + input$intercept > train.df[which(train.df$type_1=='fire'),input$y]))/nrow(train.df)
     
   }else{
-    acc = sum(c(input$slope*train.df[which(train.df$type_1=='fire'),input$x] + input$intercept > train.df[which(train.df$type_1=='fire'),input$y],
-                input$slope*train.df[which(train.df$type_1=='water'),input$x] + input$intercept < train.df[which(train.df$type_1=='water'),input$y]))/nrow(train.df)
+    acc = sum(c(input$slope*train.df[which(train.df$type_1=='water'),input$x] + input$intercept > train.df[which(train.df$type_1=='water'),input$y],
+                input$slope*train.df[which(train.df$type_1=='fire'),input$x] + input$intercept < train.df[which(train.df$type_1=='fire'),input$y]))/nrow(train.df)
   }
 
   paste('Accuracy on train set:',round(acc,2))
@@ -215,15 +218,15 @@ renderText({
 ```{r,echo=F}
 renderText({ 
   
-  nb.fire.above = sum(input$slope*train.df[which(train.df$type_1=='fire'),input$x] + input$intercept < train.df[which(train.df$type_1=='fire'),input$y])/nrow(train.df[which(train.df$type_1=='fire'),])
-  nb.fire.below = sum(input$slope*train.df[which(train.df$type_1=='fire'),input$x] + input$intercept >= train.df[which(train.df$type_1=='fire'),input$y])/nrow(train.df[which(train.df$type_1=='fire'),])
-  if(nb.fire.above > nb.fire.below){
-    acc.val = sum(c(input$slope*val.df[which(val.df$type_1=='fire'),input$x] + input$intercept < val.df[which(val.df$type_1=='fire'),input$y],
-                input$slope*val.df[which(val.df$type_1=='water'),input$x] + input$intercept > val.df[which(val.df$type_1=='water'),input$y]))/nrow(val.df)
+  nb.water.above = sum(input$slope*train.df[which(train.df$type_1=='water'),input$x] + input$intercept < train.df[which(train.df$type_1=='water'),input$y])/nrow(train.df[which(train.df$type_1=='water'),])
+  nb.water.below = sum(input$slope*train.df[which(train.df$type_1=='water'),input$x] + input$intercept >= train.df[which(train.df$type_1=='water'),input$y])/nrow(train.df[which(train.df$type_1=='water'),])
+  if(nb.water.above > nb.water.below){
+    acc.val = sum(c(input$slope*val.df[which(val.df$type_1=='water'),input$x] + input$intercept < val.df[which(val.df$type_1=='water'),input$y],
+                input$slope*val.df[which(val.df$type_1=='fire'),input$x] + input$intercept > val.df[which(val.df$type_1=='fire'),input$y]))/nrow(val.df)
     
   }else{
-    acc.val = sum(c(input$slope*val.df[which(val.df$type_1=='fire'),input$x] + input$intercept > val.df[which(val.df$type_1=='fire'),input$y],
-                input$slope*val.df[which(val.df$type_1=='water'),input$x] + input$intercept < val.df[which(val.df$type_1=='water'),input$y]))/nrow(val.df)
+    acc.val = sum(c(input$slope*val.df[which(val.df$type_1=='water'),input$x] + input$intercept > val.df[which(val.df$type_1=='water'),input$y],
+                input$slope*val.df[which(val.df$type_1=='fire'),input$x] + input$intercept < val.df[which(val.df$type_1=='fire'),input$y]))/nrow(val.df)
   }
   
   
@@ -369,11 +372,21 @@ sum(predict(fit,newx = val.df[,-5])$predictions == val.df$type_1)/nrow(val.df)
    
    plot(train.df[,input$x.nl],train.df[,input$y.nl], col=ifelse(test = train.df$type_1 == 'water',yes = 'blue',no = 'orange'), pch=16,
         ylab=input$y.nl,xlab=input$x.nl)
-   grid()
    legend(x = 'topright',legend = c('water','fire'),pch=c(16,16),col = c('blue','orange'))
   # if(input$select.nl == input$x.nl) abline(v=input$cur.thresh,col='red')
   # if(input$select.nl == input$y.nl) abline(v=input$cur.thresh,col='red')
    
+ for(i in 1:nrow(tree.df()$frame)){
+   val = as.numeric(gsub(pattern = '<',replacement = '',tree.df()$frame$splits[i,1]))
+
+   if(tree.df()$frame$var[i] == input$x.nl){
+       abline(v=val,lty=2,lwd=2)
+   }else{
+     if(tree.df()$frame$var[i] == input$y.nl){
+       abline(h=val,lty=2,lwd=2)
+     }
+   }
+ }
  })
 
 # renderUI({
@@ -538,14 +551,14 @@ fit.rf <- reactive({
 * We can check which variables were the most **important** in the prediction process:
 
 ```{r echo=F}
-#   renderPrint({
-#  importance(fit.rf())[order(importance(fit.rf()),decreasing=TRUE),]
-#   })
-#     renderText({
-# # Accuracy on the validation set
-#  preds = predict(fit.rf(),newdata = val.df)
-# paste('Accuracy on the validation set:',round(sum(preds==val.df$type_1)/nrow(val.df),2),'\n')
-# })
+   renderPrint({
+  importance(fit.rf())[order(importance(fit.rf()),decreasing=TRUE),]
+   })
+     renderText({
+ # Accuracy on the validation set
+  preds = predict(fit.rf(),newdata = val.df)
+ paste('Accuracy on the validation set:',round(sum(preds==val.df$type_1)/nrow(val.df),2),'\n')
+ })
 
 ```
 
