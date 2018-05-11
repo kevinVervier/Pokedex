@@ -26,10 +26,33 @@ load('../data/processed_data_water_fire.Rdata')
 Here is an interactive table of the training set. Feel free to sort the columns, and filter the rows to explore the dataset.
 
 ```{r}
-if(!require('DT')) install.packages('DT')
+if(!require('DT')) install.packages('DT',repos='http://mirror.las.iastate.edu/CRAN/')
 
 DT::datatable(train.df,rownames= FALSE)
 ```
+
+where:
+
+* id: a pokemon unique ID
+* height: pokemon height
+* weight: pokemon weight
+* base_experience: experience granted if defeated
+* type_1: pokemon type (can be multiple, if so, duplicate entries)
+* attack, defense: characteristics regardin 'physicial' traits
+* hp: health points
+* special_attack, special_defense: characteristics regarding 'non-physical' traits
+* speed: pokemon speed
+* egg_group_1: pokemons from the same group (but different species) can have babies
+* color_id: pokemon principal color
+* shape_id: pokemon shape category
+* gender_rate: pokemon gender rate (-1 genderless, 0 is male only, 8 is female only)
+* capture_rate: how easy it is to catch a pokemon (0 is hard, 255 is easy)
+* base_happiness: how happy is a pokemon after catch (0 unhappy to 140 happy)
+* is_baby: does this pokemon only exist as a baby form of other pokemons ?
+* hatch_counter:  how long it takes to hatch an egg (5 quick to 120 long)
+* has_gender_differences: is there differences between male and female in their development?
+* growth_rate_id: how fast a pokemon level up (from 1 fast to 6 slow)
+* evolution: TRUE if the pokemon has evolved from another pokemon
 
 # Univariate analysis
 
@@ -225,7 +248,7 @@ renderText({
 * How difficult this task will be if we include more than 2 dimensions in the model?
 
 ```{r echo=FALSE}
-    if(!require(LiblineaR)) install.packages('LiblineaR')
+    if(!require(LiblineaR)) install.packages('LiblineaR',repos='http://mirror.las.iastate.edu/CRAN/')
 ```
 
 ```{r}
@@ -363,7 +386,7 @@ sum(predict(fit,newx = val.df[,-5])$predictions == val.df$type_1)/nrow(val.df)
 #})
 
  tree.df <- reactive({
-   if(!require(tree)) install.packages('tree')
+   if(!require(tree)) install.packages('tree',repos='http://mirror.las.iastate.edu/CRAN/')
   
   tmp.df = cbind(train.df$type_1,train.df[,input$x.nl],train.df[,input$y.nl])
   colnames(tmp.df) = c('type',input$x.nl,input$y.nl)
@@ -491,7 +514,7 @@ renderText({
 
 
 ```{r echo=FALSE}
-    if(!require(randomForest)) install.packages('randomForest')
+    if(!require(randomForest)) install.packages('randomForest',repos='http://mirror.las.iastate.edu/CRAN/')
 ```
 
 ```{r,echo=F}
@@ -505,23 +528,24 @@ fit.rf <- reactive({
   set.seed(42)
   randomForest(y=train.df$type_1,x = train.df[,-5],ntree = input$ntree)})
 
-renderText({
-  # Accuracy on the training set
-print(paste('Accuracy on the training set:',round(1-(fit.rf()$confusion[1,2] + fit.rf()$confusion[2,1])/nrow(train.df),2),'\n'))
-})
+ renderText({
+   # Accuracy on the training set
+     paste('Accuracy on the training set:',round(1-(fit.rf()$confusion[1,2] + fit.rf()$confusion[2,1])/nrow(train.df),2),'\n')
+
+ })
 ```
 
 * We can check which variables were the most **important** in the prediction process:
 
 ```{r echo=F}
-  renderPrint({
- importance(fit.rf())[order(importance(fit.rf()),decreasing=TRUE),]
-  })
-    renderText({
-# Accuracy on the validation set
- preds = predict(fit.rf(),newdata = val.df)
-print(paste('Accuracy on the validation set:',round(sum(preds==val.df$type_1)/nrow(val.df),2),'\n'))
-})
+#   renderPrint({
+#  importance(fit.rf())[order(importance(fit.rf()),decreasing=TRUE),]
+#   })
+#     renderText({
+# # Accuracy on the validation set
+#  preds = predict(fit.rf(),newdata = val.df)
+# paste('Accuracy on the validation set:',round(sum(preds==val.df$type_1)/nrow(val.df),2),'\n')
+# })
 
 ```
 
