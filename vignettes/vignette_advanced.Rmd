@@ -1,0 +1,187 @@
+---
+title: "Pokemon-ML-advanced"
+author: "Kevin Vervier"
+date: "May 8, 2018"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+# Introduction
+
+This vignette was designed for the Lab Retreat (May 2018) as a support for the Machine Learning session. It assumes that you have a basic understanding of the different algorithms and techniques to train a model.
+
+We are going to use the data downloaded from the Pokedex (https://github.com/veekun/pokedex), and try to solve multiple tasks using machine learning in a Kaggle-like challenge.
+
+# Data description
+
+Raw data were already processed to save time. We randomly split data in two sets (*train.df* and *val.df*) that cover respectively 80% and 20% of the data. Of course, feel free to merge them especially if you plan to do cross-validation.
+Here is how the data looks like in term of descriptors:
+
+```{r}
+load('../data/processed_data.Rdata')
+```
+
+And here are some random entries in the database:
+
+```{r}
+train.df[sample(1:nrow(train.df),size = 10,replace=FALSE),]
+
+```
+
+where:
+
+* id: a pokemon unique ID
+* height: pokemon height
+* weight: pokemon weight
+* base_experience: experience granted if defeated
+* type_1: pokemon type (can be multiple, if so, duplicate entries)
+* attack, defense: characteristics regardin 'physicial' traits
+* hp: health points
+* special_attack, special_defense: characteristics regarding 'non-physical' traits
+* speed: pokemon speed
+* egg_group_1: pokemons from the same group (but different species) can have babies
+* color_id: pokemon principal color
+* shape_id: pokemon shape category
+* gender_rate: pokemon gender rate (-1 genderless, 0 is male only, 8 is female only)
+* capture_rate: how easy it is to catch a pokemon (0 is hard, 255 is easy)
+* base_happiness: how happy is a pokemon after catch (0 unhappy to 140 happy)
+* is_baby: does this pokemon only exist as a baby form of other pokemons ?
+* hatch_counter:  how long it takes to hatch an egg (5 quick to 120 long)
+* has_gender_differences: is there differences between male and female in their development?
+* growth_rate_id: how fast a pokemon level up (from 1 fast to 6 slow)
+* evolution: TRUE if the pokemon has evolved from another pokemon
+
+The following tasks will use these data for different purposes, and can be done in any order. We took out of the database every Pokemon from the last Generation (7, Moon and Sun) and they will be used only as final test evaluation.
+
+
+# Task 1: predict Pokemon speed
+
+For the first task, we consider a regression problem, where we would like to accurately predict a pokemon speed given its other characteristics.
+Here is a example of code for fitting a linear model that uses all the features. This example also includes the code to compute the **mean-squared error** which will be the performance indicator used in this contest.
+
+```{r}
+#train a linear model including all the descriptors:
+m <- lm(speed ~ . , data = train.df)
+preds = predict(m,val.df)
+
+# compute the mean squared error
+sum((preds-val.df$speed)^2)/nrow(val.df) # MSE = 366
+```
+
+
+```{r,echo=FALSE,eval=FALSE}
+library(glmnet)
+#train a sparse linear model including all the descriptors:
+X.train = as.matrix(train.df[,names(train.df) != 'speed'],as.is=TRUE)
+
+Y.train = train.df$speed
+m <- cv.glmnet(x = X.train, y=Y.train, family = 'gaussian',alpha = 1)
+
+# the alpha parameter controls the model sparsity
+
+X.val = as.matrix(val.df[,names(val.df) != 'speed'],as.is=TRUE)
+preds = predict(m,X.val,s = m$lambda.1se)
+
+# compute the mean squared error
+sum((preds-val.df$speed)^2)/nrow(val.df)
+
+```
+
+Hints:
+
+* Extension to random forest regression (*randomForest* package), Support vector machine (*LiblineaR* package), Elasticnet (*glmnet* package).
+
+* Filter out some descriptors
+
+
+# Task 2: predict Pokemon type
+
+The second task is a classification one, where you are asked to train a predicitve model for Pokemon types (18 in total). 
+
+Here is a table with the Pokemon type names and their corresponding IDs in the dataset (stored in the Rdata object):
+
+```{r}
+type_id
+```
+
+Even if most Pokemon have one single type, some Pokemon presented a combination of two types. A solution was proposed by duplicating the entries for Pokemons with two types, but keep the same ID.
+
+
+
+For instance, Pokemon 1 (Bulbasaur) is both grass and poison.
+
+```{r,echo=FALSE}
+head(train.df[order(train.df$id),],2)
+```
+
+
+Here is an example of a classifier trained on the data (Poisson regression):
+
+```{r}
+
+library(randomForest)
+
+X = train.df
+X$id = NULL
+X$type_1 = NULL
+
+Y=as.factor(train.df$type_1)
+
+m = randomForest(x=X,y=Y,ntree = 10)
+
+
+```
+
+And here is the function we will use to measure how good a multiclass classifier is (from Kaggle challenges):
+
+```{r}
+##  multi-class logarithmic loss calculation function for local validation: 
+multi_class_log_loss <- function(testSetId, output, target) {
+  # testSet - the list of Ids that are evaluated (length = N)
+  # output - resulted data frame having predicted values for each of class (dimensions: N by n_classes)
+  # target - the actual class label
+  
+  log_sum <- 0
+  N = length(testSetId)
+  
+  for( i in 1:N ) {	
+    idx = which(testSetId == testSetId[i]) # cases of double types
+    
+    curPred = max(output[i, target[idx]])
+    if(curPred == 0) curPred = 0.00000000001
+    log_sum <- log_sum + log( curPred )
+  }
+  mclass_log_loss = -1 * log_sum/N
+  
+  #return
+  mclass_log_loss
+}
+
+```
+
+The **lower** the score is, the **better** is the model across all classes.
+
+Here are the performances we got with a first random forest model:
+
+```{r}
+
+X.val = val.df
+X.val$id = NULL
+X.val$type_1 = NULL
+
+Y.val=as.factor(val.df$type_1)
+testSetId = val.df$id
+target=Y.val
+output=predict(m,newdata = X.val,type = 'vote')
+multi_class_log_loss( testSetId, output, target) 
+
+```
+
+Hints:
+
+* Extension to K nearest neighbours (*class* package), Support vector machine (*LiblineaR* package), Elasticnet (*glmnet* package, multinomial model).
+
+* Filter out some descriptors
